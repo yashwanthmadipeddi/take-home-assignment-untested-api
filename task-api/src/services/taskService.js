@@ -6,10 +6,12 @@ const getAll = () => [...tasks];
 
 const findById = (id) => tasks.find((t) => t.id === id);
 
-const getByStatus = (status) => tasks.filter((t) => t.status.includes(status));
+// Status filtering is exact: the query represents a status value, not a substring.
+const getByStatus = (status) => tasks.filter((t) => t.status === status);
 
+// Page numbers are 1-based, so page 1 starts at index 0.
 const getPaginated = (page, limit) => {
-  const offset = page * limit;
+  const offset = (page - 1) * limit;
   return tasks.slice(offset, offset + limit);
 };
 
@@ -28,7 +30,13 @@ const getStats = () => {
   return { ...counts, overdue };
 };
 
-const create = ({ title, description = '', status = 'todo', priority = 'medium', dueDate = null }) => {
+const create = ({
+  title,
+  description = '',
+  status = 'todo',
+  priority = 'medium',
+  dueDate = null,
+}) => {
   const task = {
     id: uuidv4(),
     title,
@@ -66,7 +74,6 @@ const completeTask = (id) => {
 
   const updated = {
     ...task,
-    priority: 'medium',
     status: 'done',
     completedAt: new Date().toISOString(),
   };
@@ -74,6 +81,25 @@ const completeTask = (id) => {
   const index = tasks.findIndex((t) => t.id === id);
   tasks[index] = updated;
   return updated;
+};
+
+const assignTask = (id, assignee) => {
+  const index = tasks.findIndex((t) => t.id === id);
+  if (index === -1) {
+    return { task: null, error: 'not_found' };
+  }
+
+  if (tasks[index].assignee) {
+    return { task: null, error: 'already_assigned' };
+  }
+
+  const updated = {
+    ...tasks[index],
+    assignee,
+  };
+
+  tasks[index] = updated;
+  return { task: updated, error: null };
 };
 
 const _reset = () => {
@@ -90,5 +116,6 @@ module.exports = {
   update,
   remove,
   completeTask,
+  assignTask,
   _reset,
 };
